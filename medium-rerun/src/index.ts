@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { User } from '@prisma/client'
-import { PrismaClient } from '@prisma/client/extension'
+import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
+import { decode, sign, verify } from 'hono/jwt'
 
 const app = new Hono<{  
   Bindings: {
@@ -9,12 +9,30 @@ const app = new Hono<{
   JWT_SECRET: string
 }}>()
 
-app.post('/api/v1/user/signup', (c) => {
+app.post('/api/v1/user/signup', async (c) => {
 
-  const prima = new PrismaClient({
+  
+  const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate())
-  return c.text('Hello Hono!')
+  
+  const body = await c.req.json();
+
+  try{
+    await prisma.user.create({
+      data: {
+        username: body.username,
+        password: body.password,
+      }
+    })
+
+    return c.text('Hiiiiiii Signup')
+  } catch(e){
+    c.status(411)
+    return c.json({
+      "error": e
+    })
+  }
 })
 
 app.post('/api/v1/user/singin', (c) => {
