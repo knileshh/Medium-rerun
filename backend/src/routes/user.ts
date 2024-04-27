@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { decode, sign, verify } from 'hono/jwt'
-import { signupInput } from '../zod'
+import { signinInput, signupInput } from '@avglinuxguy/common'
 
 
 
@@ -57,6 +57,15 @@ userRouter.post('/signup', async (c) => {
     }).$extends(withAccelerate())
     
     const body = await c.req.json();
+
+    const { success } = signinInput.safeParse(body);
+
+    if(!success){
+        c.status(411)
+        return c.json({
+            message: "credentials not correct"
+        })
+    }
   
     try{
       const user = await prisma.user.findFirst({
